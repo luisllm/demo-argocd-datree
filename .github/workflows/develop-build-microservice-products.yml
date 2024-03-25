@@ -111,20 +111,20 @@ jobs:
         continue-on-error: true
         run: |
           TEMP_FOLDER="${{ steps.clone-and-update.outputs.temp-folder }}"  # Get TEMP_FOLDER from the previous step
-          cd $TEMP_FOLDER
+          cd $TEMP_FOLDER/application-charts/$APP
           helm dependency update .
           helm datree test . -- --values ./values-dev.yaml
 
       - name: Git commit new image tag into values files
         run: |
           TEMP_FOLDER="${{ steps.clone-and-update.outputs.temp-folder }}"  # Get TEMP_FOLDER from the previous step
-          cd $TEMP_FOLDER
+          cd $TEMP_FOLDER/application-charts/$APP
           pwd
           ls
           echo "1"
           cd ../../
-          echo "2"
           ls
+          git status
           git config user.email "luis.longo.m@gmail.com"
           git config user.name "luisllm"
           git add .
