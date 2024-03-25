@@ -108,8 +108,7 @@ jobs:
           echo Update Helm chart values-dev with new image tag
           IMAGE_TAG=$IMAGE_TAG yq e -i '.$APP.deployment.imageTag = env(IMAGE_TAG)' ./values-dev.yaml
           echo 'Container image tag updated in $APP/values-dev.yaml' 
-          # Test
-          # https://github.com/datreeio/helm-datree
+          # Test with datree
           helm plugin install https://github.com/datreeio/helm-datree
           helm plugin update datree
           #helm datree config set token $DATREE_TOKEN
@@ -121,3 +120,4 @@ jobs:
           git add .  
           git commit -m "refactor - updated Helm chart values for dev environment with container image - $IMAGE_TAG" 
           git push -u origin main
+          TOKEN_GITHUB

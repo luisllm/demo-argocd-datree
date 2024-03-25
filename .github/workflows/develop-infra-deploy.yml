@@ -282,89 +282,13 @@ jobs:
           done
 
 
-  # Deploy Crossplane
-  crossplane_deployment:
-    name: "Deploy Crossplane"
-    runs-on: ubuntu-latest
-    #environment: $ENVIRONMENT
-    defaults:
-      run:
-        working-directory: crossplane
-    needs: [deploy_vpc_and_eks]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-
-      - name: Update kube config
-        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
-
-      - name: Deploy Crossplane with Helm
-        run: |
-          helm repo add crossplane-stable https://charts.crossplane.io/stable
-          helm repo update
-          helm upgrade --install crossplane \
-            --namespace crossplane-system \
-            --create-namespace crossplane-stable/crossplane \
-            --version $CROSSPLANE_CHART_VERSION
-
-      # Get from AWS ParameterStore the IAM Role ARN for the Crossplane ServiceAccount
-      # The IAM Role was created by Terraform
-      - name: Get IAM Role from ParameterStore
-        id: discover-iam-role
-        run: |
-          iam_role_arn=$(aws ssm get-parameter --name "/$ENVIRONMENT/test-crossplane-iam-role-arn" --query 'Parameter.Value' --output text)
-          echo "IAM_ROLE_ARN=$iam_role_arn" >>$GITHUB_ENV
-
-      - name: Create Crossplane ControllerConfig, Provider and ProviderConfig 
-        run: |
-          sed "s|iam_role_arn_changeme|$IAM_ROLE_ARN|g" ControllerConfig.yaml > ControllerConfig-replaced.yaml
-          kubectl apply -f ControllerConfig-replaced.yaml
-          sed "s|upbound_provider_aws_s3_version_changeme|$UPBOUND_PROVIDER_AWS_S3_VERSION|g" Provider.yaml > Provider-replaced.yaml
-          kubectl apply -f Provider-replaced.yaml
-          kubectl apply -f ProviderConfig.yaml
-
-
-  # Deploy S3 bucket with Crossplane
-  deploy_s3bucket:
-    name: "Deploy S3 bucket"
-    runs-on: ubuntu-latest
-    #environment: $ENVIRONMENT
-    needs: [crossplane_deployment]
-    defaults:
-      run:
-        working-directory: crossplane
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-
-      - name: Update kube config
-        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
-
-      - name: "Deploy S3 bucket"
-        run: kubectl apply -f s3bucket.yaml
-
-
 
   # Test and verify the infra was deployed correctly
   test_infra:
     name: "Test infra"
     runs-on: ubuntu-latest
     #environment: $ENVIRONMENT
-    needs: [deploy_vpc_and_eks, deploy_monitoring, ingress_deployment, public_ingress_lb_discovery, metrics_server_deployment, crossplane_deployment]
+    needs: [deploy_vpc_and_eks, deploy_monitoring, ingress_deployment, public_ingress_lb_discovery, metrics_server_deployment]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
