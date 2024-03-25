@@ -87,8 +87,9 @@ jobs:
 
       # Clone git repository with Helm charts, update and push changes
       - name: Update image tag in Helm git repo
-        #env: 
+        env: 
         #  DATREE_TOKEN: ${{ secrets.DATREE_TOKEN }}
+          TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
         run: | 
           IMAGE_TAG="$(node -e "console.log(require('./package.json').version);")"
           echo New container image tag: $IMAGE_TAG
@@ -108,9 +109,16 @@ jobs:
           helm datree test . -- --values ./values-dev.yaml
           # Redirect back to root of temporary folder and push the change to the CONFIG repo
           cd ../../
-          git config user.email "luis.longo.m@gmail.com" 
-          git config user.name "llm" 
-          git add .  
+          git config user.email "luis.longo.m@gmail.com"
+          git config user.name "luisllm"
+          git add .
           git commit -m "refactor - updated Helm chart values for dev environment with container image - $IMAGE_TAG" 
-          git push -u origin main
-          TOKEN_GITHUB
+          #git push -u origin main
+          
+
+      - name: Push changes to another repository
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.TOKEN_GITHUB }}
+          branch: main
+          repository: luisllm/demo-argocd-datree-config
