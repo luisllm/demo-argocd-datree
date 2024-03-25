@@ -117,15 +117,12 @@ jobs:
           helm dependency update .
           helm datree test . -- --values ./values-dev.yaml
 
-      - name: Git commit new image tag into values files
+      - name: Git commit and push new image tag into values files in CONFIG repo
         run: |
           TEMP_FOLDER="${{ steps.clone-and-update.outputs.temp-folder }}"  # Get TEMP_FOLDER from the previous step
           cd $TEMP_FOLDER/application-charts/$APP
           pwd
-          ls
-          echo "1"
           cd ../../
-          ls
           git status
           git config user.email "luis.longo.m@gmail.com"
           git config user.name "luisllm"
@@ -134,11 +131,4 @@ jobs:
           git remote remove origin
           git remote add origin https://${{ secrets.TOKEN_GITHUB }}@github.com/luisllm/$CONFIG_REPO.git
           git push --set-upstream origin main
-
-      - name: Push changes to CONFIG repo
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.TOKEN_GITHUB }}
-          branch: main
-          repository: luisllm/demo-argocd-datree-config
         
