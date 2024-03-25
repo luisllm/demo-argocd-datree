@@ -105,6 +105,8 @@ jobs:
           # Test with datree
           helm plugin install https://github.com/datreeio/helm-datree
           helm plugin update datree
+          helm datree version
+          helm datree config set offline local
           #helm datree config set token $DATREE_TOKEN
           helm dependency update .
           helm datree test . -- --values ./values-dev.yaml
