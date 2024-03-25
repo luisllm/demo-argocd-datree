@@ -85,13 +85,6 @@ jobs:
           echo Pushing the Docker image to AWS ECR...
           docker push $REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG
 
-          - name: Run Datree Policy Check
-          uses: datreeio/action-datree@main
-          with:
-            path: 'charts/external-dns'
-            isHelmChart: true
-            helmArguments: '--values helm-values/external-dns/values.yaml'
-
       # Clone git repository with Helm charts, update and push changes
       - name: Update image tag in Helm git repo
         #env: 
