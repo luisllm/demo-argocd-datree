@@ -71,7 +71,6 @@ jobs:
         if: steps.check_repo.outputs.repo_exists != 'true'
         run: aws ecr create-repository --repository-name $REPOSITORY_NAME
 
-      # Build and test application
       - name: Build image, test and push to AWS ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -108,15 +107,18 @@ jobs:
 
       - name: Run Datree Tests
         continue-on-error: true
-        run: 
+        run: |
           helm dependency update .
           helm datree test . -- --values ./values-dev.yaml
 
       - name: Git commit new image tag into values files
-        run:
+        run: |
           pwd
           ls
+          echo "1"
           cd ../../
+          echo "2"
+          ls
           git config user.email "luis.longo.m@gmail.com"
           git config user.name "luisllm"
           git add .
@@ -128,3 +130,4 @@ jobs:
           github_token: ${{ secrets.TOKEN_GITHUB }}
           branch: main
           repository: luisllm/demo-argocd-datree-config
+        
