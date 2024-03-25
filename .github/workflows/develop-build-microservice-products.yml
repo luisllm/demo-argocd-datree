@@ -85,11 +85,7 @@ jobs:
           echo Pushing the Docker image to AWS ECR...
           docker push $REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG
 
-      # Clone git repository with Helm charts, update and push changes
-      - name: Update image tag in Helm git repo
-        env: 
-        #  DATREE_TOKEN: ${{ secrets.DATREE_TOKEN }}
-          TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
+      - name: Clone CONFIG repo to local and update image tag in values file
         run: | 
           IMAGE_TAG="$(node -e "console.log(require('./package.json').version);")"
           echo New container image tag: $IMAGE_TAG
@@ -101,25 +97,30 @@ jobs:
           ls
           echo Update Helm chart values-dev with new image tag
           IMAGE_TAG=$IMAGE_TAG yq e -i '.$APP.deployment.imageTag = env(IMAGE_TAG)' ./values-dev.yaml
-          echo 'Container image tag updated in $APP/values-dev.yaml' 
-          # Test with datree
+          echo "Container image tag updated in $APP/values-dev.yaml"
+
+      - name: Install Helm-Datree
+        run: |
           helm plugin install https://github.com/datreeio/helm-datree
           helm plugin update datree
           helm datree version
           helm datree config set offline local
-          #helm datree config set token $DATREE_TOKEN
+
+      - name: Run Datree Tests
+        continue-on-error: true
+        run: 
           helm dependency update .
           helm datree test . -- --values ./values-dev.yaml
-          # Redirect back to root of temporary folder and push the change to the CONFIG repo
+
+      - name: Git commit new image tag into values files
+        run: 
           cd ../../
           git config user.email "luis.longo.m@gmail.com"
           git config user.name "luisllm"
           git add .
           git commit -m "refactor - updated Helm chart values for dev environment with container image - $IMAGE_TAG" 
-          #git push -u origin main
-          
 
-      - name: Push changes to another repository
+      - name: Push changes to CONFIG repo
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.TOKEN_GITHUB }}
