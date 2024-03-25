@@ -106,6 +106,7 @@ jobs:
           helm plugin install https://github.com/datreeio/helm-datree
           helm plugin update datree
           #helm datree config set token $DATREE_TOKEN
+          helm dependency update .
           helm datree test . -- --values ./values-dev.yaml
           # Redirect back to root of temporary folder and push the change to the CONFIG repo
           cd ../../
