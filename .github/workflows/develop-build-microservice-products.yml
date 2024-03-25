@@ -113,7 +113,9 @@ jobs:
           helm datree test . -- --values ./values-dev.yaml
 
       - name: Git commit new image tag into values files
-        run: 
+        run:
+          pwd
+          ls
           cd ../../
           git config user.email "luis.longo.m@gmail.com"
           git config user.name "luisllm"
