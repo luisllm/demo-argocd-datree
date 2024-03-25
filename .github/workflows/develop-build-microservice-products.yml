@@ -131,7 +131,7 @@ jobs:
           git commit -m "refactor - updated Helm chart values for dev environment with container image - $IMAGE_TAG" 
           git remote remove origin
           git remote add origin https://${{ secrets.TOKEN_GITHUB }}@github.com/luisllm/$CONFIG_REPO
-          git push
+          git push --set-upstream origin main
 
       - name: Push changes to CONFIG repo
         uses: ad-m/github-push-action@master
