@@ -98,6 +98,7 @@ jobs:
           ls
           echo Update Helm chart values-dev with new image tag
           IMAGE_TAG=$IMAGE_TAG yq e -i '.$APP.deployment.imageTag = env(IMAGE_TAG)' ./values-dev.yaml
+          cat values-dev.yaml
           echo "Container image tag updated in $APP/values-dev.yaml"
           echo "::set-output name=temp-folder::$TEMP_FOLDER"  # Set TEMP_FOLDER as an output
 
