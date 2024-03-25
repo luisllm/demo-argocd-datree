@@ -19,7 +19,8 @@ env:
   ENVIRONMENT: develop
   REPOSITORY_NAME: "ecommerce-products"
   APP: "products"
-  CONFIG_REPO: "https://github.com/luisllm/demo-argocd-datree-config.git"
+  CONFIG_REPO: "demo-argocd-datree-config"
+  CONFIG_REPO_URI: "https://github.com/luisllm/demo-argocd-datree-config.git"
 
 jobs:
   build_and_publish_image:
@@ -92,7 +93,7 @@ jobs:
           echo Create temporary folder to clone the repo into...
           TEMP_FOLDER="$(mktemp -d)" 
           echo Clone the repository...
-          git clone -b main $CONFIG_REPO $TEMP_FOLDER 
+          git clone -b main $CONFIG_REPO_URI $TEMP_FOLDER 
           cd $TEMP_FOLDER/application-charts/$APP
           ls
           echo Update Helm chart values-dev with new image tag
@@ -130,7 +131,7 @@ jobs:
           git add .
           git commit -m "refactor - updated Helm chart values for dev environment with container image - $IMAGE_TAG" 
           git remote remove origin
-          git remote add origin https://${{ secrets.TOKEN_GITHUB }}@github.com/luisllm/$CONFIG_REPO
+          git remote add origin https://${{ secrets.TOKEN_GITHUB }}@github.com/luisllm/$CONFIG_REPO.git
           git push --set-upstream origin main
 
       - name: Push changes to CONFIG repo
