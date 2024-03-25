@@ -128,74 +128,6 @@ jobs:
       #      color: danger
 
 
-  # Deploy Prometheus and Grafana
-  deploy_monitoring:
-    name: "Deploy monitoring"
-    runs-on: ubuntu-latest
-    #environment: $ENVIRONMENT
-    needs: [deploy_vpc_and_eks]
-    defaults:
-      run:
-        # In here I have a custom values file for prometheus and grafana, where I customized some grafana dashboards
-        working-directory: monitoring
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-
-      - name: Update kube config
-        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
-
-      - name: Create monitoring namespace
-        run: |
-          kubectl get namespace | grep -q "^monitoring" || kubectl create namespace monitoring  
-
-      # Using a custom values to introduce some custom Grafana dashboards
-      - name: Deploy Prometheus and Grafana with Helm
-        run: |
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo update
-          helm upgrade --install "mon" \
-            prometheus-community/kube-prometheus-stack \
-            --version $KUBE_PROMETHEUS_STACK_CHART_VERSION \
-            --namespace monitoring \
-            --values custom-prometheus-grafana-values.yaml
-
-
-  # Deploy metrics-server to be able to have HPA working
-  # https://artifacthub.io/packages/helm/metrics-server/metrics-server
-  metrics_server_deployment:
-    name: "Deploy metrics-server"
-    runs-on: ubuntu-latest
-    #environment: $ENVIRONMENT
-    needs: [deploy_vpc_and_eks]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-
-      - name: Update kube config
-        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
-
-      - name: Deploy metrics-server
-        run: |
-          helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
-          helm upgrade --install metrics-server metrics-server/metrics-server \
-            --version $METRICS_SERVER_CHART_VERSION \
-            --namespace kube-system
-            
 
 
   # Deploy nginx ingress controller to be able to expose the EKS cluster via a public AWS LB, and be able to send requests
@@ -288,7 +220,7 @@ jobs:
     name: "Test infra"
     runs-on: ubuntu-latest
     #environment: $ENVIRONMENT
-    needs: [deploy_vpc_and_eks, deploy_monitoring, ingress_deployment, public_ingress_lb_discovery, metrics_server_deployment]
+    needs: [deploy_vpc_and_eks, ingress_deployment, public_ingress_lb_discovery]
     steps:
       - name: Checkout
         uses: actions/checkout@v2

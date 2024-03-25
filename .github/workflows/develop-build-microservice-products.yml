@@ -132,7 +132,8 @@ jobs:
             git remote remove origin
             git remote add origin https://${{ secrets.TOKEN_GITHUB }}@github.com/luisllm/$CONFIG_REPO.git
             git push --set-upstream origin main
+            echo "Changes pushed to CONFIG repo"
           else
-            echo "No changes to commit."
+            echo "No changes to commit"
           fi
         
