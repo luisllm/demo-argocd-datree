@@ -123,12 +123,16 @@ jobs:
           cd $TEMP_FOLDER/application-charts/$APP
           pwd
           cd ../../
-          git status
-          git config user.email "luis.longo.m@gmail.com"
-          git config user.name "luisllm"
-          git add .
-          git commit -m "refactor - updated Helm chart values for dev environment with container image - $IMAGE_TAG" 
-          git remote remove origin
-          git remote add origin https://${{ secrets.TOKEN_GITHUB }}@github.com/luisllm/$CONFIG_REPO.git
-          git push --set-upstream origin main
+          # Check if there are changes to commit
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.email "luis.longo.m@gmail.com"
+            git config user.name "luisllm"
+            git add .
+            git commit -m "refactor - updated Helm chart values for dev environment with container image - $IMAGE_TAG" 
+            git remote remove origin
+            git remote add origin https://${{ secrets.TOKEN_GITHUB }}@github.com/luisllm/$CONFIG_REPO.git
+            git push --set-upstream origin main
+          else
+            echo "No changes to commit."
+          fi
         
