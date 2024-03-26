@@ -178,6 +178,8 @@ jobs:
     runs-on: ubuntu-latest
     #environment: $ENVIRONMENT
     needs: [ingress_deployment]
+    outputs:
+      ingress_lb_dns_name: ${{ steps.discover-lb-dns.outputs.ingress_lb_dns_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -210,6 +212,7 @@ jobs:
                   ingress_lb_dns_name=$(aws elb describe-load-balancers --load-balancer-names "$lb_name" --query "LoadBalancerDescriptions[].DNSName" --output text)
                   echo "$ingress_lb_dns_name"
                   aws ssm put-parameter --name "/$ENVIRONMENT/ingress-public-load-balancer-dns" --value "$ingress_lb_dns_name" --type String --overwrite
+                  echo "::set-output name=ingress_lb_dns_name::$ingress_lb_dns_name"
               fi
           done
 
@@ -219,6 +222,9 @@ jobs:
     name: "Deploy ArgoCD"
     runs-on: ubuntu-latest
     #environment: $ENVIRONMENT
+    defaults:
+      run:
+        working-directory: argocd
     needs: [deploy_vpc_and_eks, ingress_deployment]
     steps:
       - name: Checkout
@@ -239,8 +245,28 @@ jobs:
           kubectl get namespace | grep -q "^argocd" || kubectl create namespace argocd
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
+      # Patch ArgoCD to be able to access the ArgoCD UI via the AWS public LB and the nginx ingress controller
+      # https://arnavtripathy98.medium.com/solution-how-to-deploy-argo-cd-dashboard-over-nginx-ingress-controller-926d8a540844
+      - name: Patch argocd and nginx ingress controller
+        run: |
+          kubectl -n argocd patch configmap argocd-cmd-params-cm --patch '{"data":{"server.insecure":"true"}}'
 
-          
+      - name: Create Ingress to access ArgoCD UI
+        run: |
+          echo "Ingress LB DNS Name: ${{ needs.public_ingress_lb_discovery.outputs.ingress_lb_dns_name }}"
+          sed "s|CHANGEME|${{ needs.public_ingress_lb_discovery.outputs.ingress_lb_dns_name }}|g" argocd-ingress.yaml > argocd-ingress-replaced.yaml
+
+      - name: Create ArgoCD products app
+        run: |
+          kubectl apply -f argocd-products-app.yaml
+
+      - name: ArgoCD admin password
+        run: |
+          echo "Run the following command to get the ArgoCD admin password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo"
+
+
+
+
   # Test and verify the infra was deployed correctly
   test_infra:
     name: "Test infra"
