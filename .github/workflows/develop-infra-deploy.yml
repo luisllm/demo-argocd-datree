@@ -225,7 +225,7 @@ jobs:
     defaults:
       run:
         working-directory: argocd
-    needs: [deploy_vpc_and_eks, ingress_deployment]
+    needs: [deploy_vpc_and_eks, ingress_deployment, public_ingress_lb_discovery]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -247,9 +247,10 @@ jobs:
 
       # Patch ArgoCD to be able to access the ArgoCD UI via the AWS public LB and the nginx ingress controller
       # https://arnavtripathy98.medium.com/solution-how-to-deploy-argo-cd-dashboard-over-nginx-ingress-controller-926d8a540844
-      - name: Patch argocd and nginx ingress controller
+      - name: Patch Argocd
         run: |
           kubectl -n argocd patch configmap argocd-cmd-params-cm --patch '{"data":{"server.insecure":"true"}}'
+          kubectl -n argocd rollout restart deployment argocd-server
 
       # Get from AWS ParameterStore the public LB dns name created automatically when the nginx ingress controller was deployed. It will be used in the Ingress object as a Host
       - name: Get AWS public LB DNS Name from ParameterStore
@@ -264,8 +265,9 @@ jobs:
           sed "s|CHANGEME|$INGRESS_LB_DNS|g" argocd-ingress.yaml > argocd-ingress-replaced.yaml
           kubectl apply -f argocd-ingress-replaced.yaml
 
-      - name: Create ArgoCD products app
+      - name: Create ecommerge namespace and ArgoCD products app
         run: |
+          kubectl get namespace | grep -q "^ecommerce" || kubectl create namespace ecommerce
           kubectl apply -f argocd-products-app.yaml
 
       - name: ArgoCD admin password
