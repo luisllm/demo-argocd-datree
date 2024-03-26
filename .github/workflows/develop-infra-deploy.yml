@@ -251,10 +251,18 @@ jobs:
         run: |
           kubectl -n argocd patch configmap argocd-cmd-params-cm --patch '{"data":{"server.insecure":"true"}}'
 
+      # Get from AWS ParameterStore the public LB dns name created automatically when the nginx ingress controller was deployed. It will be used in the Ingress object as a Host
+      - name: Get AWS public LB DNS Name from ParameterStore
+        id: discover-lb-dns
+        run: |
+          ingress_lb_dns_name=$(aws ssm get-parameter --name "/$ENVIRONMENT/ingress-public-load-balancer-dns" --query 'Parameter.Value' --output text)
+          echo "INGRESS_LB_DNS=$ingress_lb_dns_name" >>$GITHUB_ENV
+
       - name: Create Ingress to access ArgoCD UI
         run: |
-          echo "Ingress LB DNS Name: ${{ needs.public_ingress_lb_discovery.outputs.ingress_lb_dns_name }}"
-          sed "s|CHANGEME|${{ needs.public_ingress_lb_discovery.outputs.ingress_lb_dns_name }}|g" argocd-ingress.yaml > argocd-ingress-replaced.yaml
+          echo "Ingress LB DNS Name: $INGRESS_LB_DNS"
+          sed "s|CHANGEME|$INGRESS_LB_DNS|g" argocd-ingress.yaml > argocd-ingress-replaced.yaml
+          kubectl apply -f argocd-ingress-replaced.yaml
 
       - name: Create ArgoCD products app
         run: |
