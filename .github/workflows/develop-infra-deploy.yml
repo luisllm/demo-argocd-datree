@@ -217,7 +217,7 @@ jobs:
           done
 
 
-  # Deploy argocd
+  # Deploy Argocd
   argocd_deployment:
     name: "Deploy ArgoCD"
     runs-on: ubuntu-latest
@@ -265,15 +265,43 @@ jobs:
           sed "s|CHANGEME|$INGRESS_LB_DNS|g" argocd-ingress.yaml > argocd-ingress-replaced.yaml
           kubectl apply -f argocd-ingress-replaced.yaml
 
-      - name: Create ecommerge namespace and ArgoCD products app
-        run: |
-          kubectl get namespace | grep -q "^ecommerce" || kubectl create namespace ecommerce
-          kubectl apply -f argocd-products-app.yaml
-
       - name: ArgoCD admin password
         run: |
           echo "Run the following command to get the ArgoCD admin password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo"
 
+
+
+  # Deploy ArgoCD Project and Applications
+  argocd_project_and_apps_deployment:
+    name: "Deploy ArgoCD Project and Applications"
+    runs-on: ubuntu-latest
+    #environment: $ENVIRONMENT
+    defaults:
+      run:
+        working-directory: argocd
+    needs: [argocd_deployment]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+
+      - name: Update kube config
+        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+
+      - name: Create ecommerge namespace and ArgoCD products app
+        run: |
+          kubectl get namespace | grep -q "^ecommerce" || kubectl create namespace ecommerce
+
+      - name: Create ArgoCD Project and Applications
+        run: |
+          kubectl apply -f argocd-project.yaml
+          kubectl apply -f argocd-products-app.yaml
 
 
 
@@ -282,7 +310,7 @@ jobs:
     name: "Test infra"
     runs-on: ubuntu-latest
     #environment: $ENVIRONMENT
-    needs: [deploy_vpc_and_eks, ingress_deployment, public_ingress_lb_discovery]
+    needs: [deploy_vpc_and_eks, ingress_deployment, public_ingress_lb_discovery, argocd_deployment, argocd_project_and_apps_deployment]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
