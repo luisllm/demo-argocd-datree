@@ -214,7 +214,33 @@ jobs:
           done
 
 
+  # Deploy argocd
+  argocd_deployment:
+    name: "Deploy ArgoCD"
+    runs-on: ubuntu-latest
+    #environment: $ENVIRONMENT
+    needs: [deploy_vpc_and_eks, ingress_deployment]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+
+      - name: Update kube config
+        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+
+      - name: Create argocd namespace
+        run: |
+          kubectl get namespace | grep -q "^argocd" || kubectl create namespace argocd
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+
+          
   # Test and verify the infra was deployed correctly
   test_infra:
     name: "Test infra"
