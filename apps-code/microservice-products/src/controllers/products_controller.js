@@ -5,7 +5,8 @@ const get = (req, res, next) => {
       { id: '1b', name: 'Trainers' },
       { id: '1c', name: 'Bluetooth Headphones' },
       { id: '1d', name: 'Avengers T-Shirt' },
-      { id: '1e', name: 'Coffee Mug' }
+      { id: '1e', name: 'Coffee Mug' },
+      { id: '1f', name: 'test' }
     ];
     res.status(200).send(products);
   } catch (e) {
@@ -20,7 +21,8 @@ const getById = (req, res, next) => {
     { id: '1b', name: 'Trainers' },
     { id: '1c', name: 'Bluetooth Headphones' },
     { id: '1d', name: 'Avengers T-Shirt' },
-    { id: '1e', name: 'Coffee Mug' }
+    { id: '1e', name: 'Coffee Mug' },
+    { id: '1f', name: 'test' }
   ];
   try {
     const product = products.filter(product => product.id === productId)[0]
