@@ -1,4 +1,4 @@
-name: 'develop - Build Image, Publish & Update Application Helm Chart Values'
+name: 'develop - orders - Build Image, Publish & Update Application Helm Chart Values'
 
 on:
     pull_request:
