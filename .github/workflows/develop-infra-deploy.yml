@@ -302,6 +302,8 @@ jobs:
         run: |
           kubectl apply -f argocd-project.yaml
           kubectl apply -f argocd-products-app.yaml
+          kubectl apply -f argocd-orders-app.yaml
+          kubectl apply -f argocd-graphql-app.yaml
 
 
 
